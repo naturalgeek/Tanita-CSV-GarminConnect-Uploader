@@ -11,13 +11,14 @@ from garminconnect import (
     GarminConnectTooManyRequestsError,
 )
 
-tokenstore = os.getenv("GARMINTOKENS") or "~/.garminconnect"
-tokenstore_base64 = os.getenv("GARMINTOKENS_BASE64") or "~/.garminconnect_base64"
 api = None
 
 
-def init_api():
+def init_api(first_name):
     """Initialize Garmin API with your credentials."""
+
+    tokenstore = os.getenv("GARMINTOKENS") or f"~/.garminconnect.{first_name}"
+    tokenstore_base64 = os.getenv("GARMINTOKENS_BASE64") or f"~/.garminconnect_base64.{first_name}"
 
     try:
         # Using Oauth1 and OAuth2 token files from directory
@@ -95,12 +96,21 @@ def upload_file(input_filename):
 
     # Locate the header that starts with "Date;"
     header_index = None
+    first_name = None
     for i, line in enumerate(lines):
+        if line.startswith("First name"):
+            first_name = line.split("First name")[-1].strip()
         if line.startswith("Date;"):
             header_index = i
             break
     if header_index is None:
         print("CSV header (line starting with 'Date;') not found.")
+        sys.exit(1)
+
+    # Init API
+    api = init_api(first_name)
+    if api is None:
+        print(f"Could not log in to Garmin Connect for {first_name}")
         sys.exit(1)
 
     csv_content = lines[header_index:]
@@ -153,13 +163,10 @@ def upload_file(input_filename):
             bmi=bmi,
         )
 
-    print(f"Conversion complete. Data sent to Garmin")
+    print(f"Conversion complete. Data sent to {first_name}'s Garmin account")
 
 
 if __name__ == "__main__":
-    # Init API
-    api = init_api()
-
     if len(sys.argv) == 2:
         input_file = sys.argv[1]
     else:
