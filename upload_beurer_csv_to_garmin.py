@@ -188,7 +188,7 @@ def upload_file(input_filename):
             bmi=bmi,
         )
 
-    print(f"Conversion complete. Data sent to {first_name}'s Garmin account")
+    print(f"Uploading to {first_name}'s Garmin account complete. Processed {len(readings)} readings.")
 
 
 if __name__ == "__main__":
