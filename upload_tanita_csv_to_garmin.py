@@ -38,12 +38,12 @@ def get_mfa():
     return input("MFA one-time code: ")
 
 
-def init_api(first_name):
+def init_api(user):
     """Initialize Garmin API with your credentials."""
 
-    tokenstore = os.getenv("GARMINTOKENS") or f"~/.garminconnect.{first_name}"
+    tokenstore = os.getenv("GARMINTOKENS") or f"~/.garminconnect.{user}"
     tokenstore_base64 = (
-        os.getenv("GARMINTOKENS_BASE64") or f"~/.garminconnect_base64.{first_name}"
+        os.getenv("GARMINTOKENS_BASE64") or f"~/.garminconnect_base64.{user}"
     )
 
     try:
@@ -106,7 +106,7 @@ def parse_datetime(date_str, time_str):
     """Convert date from 'DD.MM.YYYY' to 'YYYY-MM-DD'."""
     iso_timestamp = date_str.strip() + "T" + time_str.strip()
     try:
-        return datetime.strptime(iso_timestamp, "%d.%m.%YT%H:%M")
+        return datetime.strptime(iso_timestamp, "%d/%m/%YT%H:%M:%S")
     except ValueError:
         return iso_timestamp
 
@@ -119,40 +119,50 @@ def upload_file(input_filename):
     with open(input_filename, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    # Locate the header that starts with "Date;"
     header_index = None
-    first_name = None
-    for i, line in enumerate(lines):
-        if line.startswith("First name"):
-            first_name = line.split("First name")[-1].strip()
-        if line.startswith("Date;"):
-            header_index = i
-            break
-    if header_index is None:
-        print("CSV header (line starting with 'Date;') not found.")
-        sys.exit(1)
+    user = "default"
 
     # Init API
-    api = init_api(first_name)
+    api = init_api(user)
     if api is None:
-        print(f"Could not log in to Garmin Connect for {first_name}")
+        print(f"Could not log in to Garmin Connect for {user}")
         sys.exit(1)
 
     csv_content = lines[header_index:]
-    reader = csv.DictReader(csv_content, delimiter=";")
+    reader = csv.reader(csv_content, delimiter=",")
 
     readings = []
     for row in reader:
-        date_orig = row.get("Date", "").strip()
-        time_orig = row.get("Time", "").strip()
-        weight = row.get("kg", "").strip()
-        bmi = row.get("BMI", "").strip()
-        percent_fat = row.get("Body fat", "").strip()
-        percent_water = row.get("Water", "").strip()
-        muscles = row.get("Muscles", "").strip()
-        bone_mass = row.get("Bone", "").strip()
+        for index, identifier in enumerate(row):
+            if identifier == "Wk": weight_addr = index+1
+            if identifier == "MI": bmi_addr = index+1
+            if identifier == "DT": date_addr = index+1
+            if identifier == "Ti": time_addr = index+1
+            if identifier == "FW": percent_fat_addr = index+1
+            if identifier == "ww": percent_hydration_addr = index+1
+            if identifier == "mW": muscle_mass_addr = index+1
+            if identifier == "IF": visceral_fat_rating_addr = index+1
+            if identifier == "bW": bone_mass_addr = index+1
+            if identifier == "AL": physic_rating_addr = index+1
+            if identifier == "rA": metabolic_age_addr = index+1
+            if identifier == "rD": caloric_intake_addr = index+1
+        break
 
-        if date_orig and time_orig and weight and bmi and percent_fat:
+    for row in reader:
+        date_orig = row[date_addr]
+        time_orig = row[time_addr]
+        weight = row[weight_addr]
+        bmi = row[bmi_addr]
+        percent_fat = row[percent_fat_addr]
+        percent_water = row[percent_hydration_addr]
+        muscles = row[muscle_mass_addr]
+        bone_mass = row[bone_mass_addr]
+        physic_rating = row[physic_rating_addr]
+        metabolic_age = row[metabolic_age_addr]
+        caloric_intake = row[caloric_intake_addr]
+        visceral_fat_rating = row[visceral_fat_rating_addr]
+
+        if date_orig and time_orig and weight and bmi and percent_fat and visceral_fat_rating and caloric_intake and metabolic_age and physic_rating:
             timestamp = parse_datetime(date_orig, time_orig)
             readings.append(
                 (
@@ -163,6 +173,10 @@ def upload_file(input_filename):
                     float(percent_water),
                     float(muscles) * float(weight) / 100.0,
                     float(bone_mass),
+                    float(physic_rating),
+                    float(metabolic_age),
+                    float(caloric_intake),
+                    float(visceral_fat_rating),
                 )
             )
 
@@ -174,9 +188,13 @@ def upload_file(input_filename):
         percent_water,
         muscle_mass,
         bone_mass,
+        physic_rating,
+        metabolic_age,
+        caloric_intake,
+        visceral_fat_rating,
     ) in readings:
         print(
-            f"api.add_body_composition({timestamp.isoformat()}, {weight}, {percent_fat}, {percent_water}, {bone_mass}, {muscle_mass}, {bmi})"
+            f"api.add_body_composition({timestamp.isoformat()}, {weight}, {percent_fat}, {percent_water}, {bone_mass}, {muscle_mass}, {physic_rating}, {metabolic_age}, {caloric_intake}, {visceral_fat_rating}, {bmi})"
         )
         api.add_body_composition(
             timestamp.isoformat(),
@@ -185,10 +203,14 @@ def upload_file(input_filename):
             percent_hydration=percent_water,
             bone_mass=bone_mass,
             muscle_mass=muscle_mass,
+            physic_rating=physic_rating,
+            metabolic_age=metabolic_age,
+            caloric_intake=caloric_intake,
+            visceral_fat_rating=visceral_fat_rating,
             bmi=bmi,
         )
 
-    print(f"Uploading to {first_name}'s Garmin account complete. Processed {len(readings)} readings.")
+    print(f"Uploading to {user}'s Garmin account complete. Processed {len(readings)} readings.")
 
 
 if __name__ == "__main__":
