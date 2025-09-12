@@ -143,7 +143,7 @@ def upload_file(input_filename):
             if identifier == "mW": muscle_mass_addr = index+1
             if identifier == "IF": visceral_fat_rating_addr = index+1
             if identifier == "bW": bone_mass_addr = index+1
-            if identifier == "AL": physic_rating_addr = index+1
+            if identifier == "AL": physique_rating_addr = index+1
             if identifier == "rA": metabolic_age_addr = index+1
             if identifier == "rD": caloric_intake_addr = index+1
         break
@@ -157,12 +157,12 @@ def upload_file(input_filename):
         percent_water = row[percent_hydration_addr]
         muscles = row[muscle_mass_addr]
         bone_mass = row[bone_mass_addr]
-        physic_rating = row[physic_rating_addr]
+        physique_rating = row[physique_rating_addr]
         metabolic_age = row[metabolic_age_addr]
         caloric_intake = row[caloric_intake_addr]
         visceral_fat_rating = row[visceral_fat_rating_addr]
 
-        if date_orig and time_orig and weight and bmi and percent_fat and visceral_fat_rating and caloric_intake and metabolic_age and physic_rating:
+        if date_orig and time_orig and weight and bmi and percent_fat and visceral_fat_rating and caloric_intake and metabolic_age and physique_rating:
             timestamp = parse_datetime(date_orig, time_orig)
             readings.append(
                 (
@@ -173,7 +173,7 @@ def upload_file(input_filename):
                     float(percent_water),
                     float(muscles) * float(weight) / 100.0,
                     float(bone_mass),
-                    float(physic_rating),
+                    float(physique_rating),
                     float(metabolic_age),
                     float(caloric_intake),
                     float(visceral_fat_rating),
@@ -188,14 +188,22 @@ def upload_file(input_filename):
         percent_water,
         muscle_mass,
         bone_mass,
-        physic_rating,
+        physique_rating,
         metabolic_age,
         caloric_intake,
         visceral_fat_rating,
     ) in readings:
         print(
-            f"api.add_body_composition({timestamp.isoformat()}, {weight}, {percent_fat}, {percent_water}, {bone_mass}, {muscle_mass}, {physic_rating}, {metabolic_age}, {caloric_intake}, {visceral_fat_rating}, {bmi})"
+            f"api.add_body_composition({timestamp.isoformat()}, {weight}, {percent_fat}, {percent_water}, {bone_mass}, {muscle_mass}, {physique_rating}, {metabolic_age}, {caloric_intake}, {visceral_fat_rating}, {bmi})"
         )
+
+#        Comment out if you want to delete all content from the newly added dates (replacing manual weigh-ins with this extensive automated ones.
+
+#        api.delete_weigh_ins(
+#            timestamp.strftime("%Y-%m-%d"),
+#            delete_all=True,
+#		)
+        print("✅ Weigh-ins deleted successfully!") 
         api.add_body_composition(
             timestamp.isoformat(),
             weight=weight,
@@ -203,9 +211,8 @@ def upload_file(input_filename):
             percent_hydration=percent_water,
             bone_mass=bone_mass,
             muscle_mass=muscle_mass,
-            physic_rating=physic_rating,
+            physique_rating=physique_rating,
             metabolic_age=metabolic_age,
-            caloric_intake=caloric_intake,
             visceral_fat_rating=visceral_fat_rating,
             bmi=bmi,
         )
