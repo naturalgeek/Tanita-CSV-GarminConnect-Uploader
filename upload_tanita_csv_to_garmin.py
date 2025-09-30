@@ -171,7 +171,7 @@ def upload_file(input_filename):
                     float(bmi),
                     float(percent_fat),
                     float(percent_water),
-                    float(muscles) * float(weight) / 100.0,
+                    float(muscles),
                     float(bone_mass),
                     float(physique_rating),
                     float(metabolic_age),
@@ -193,9 +193,6 @@ def upload_file(input_filename):
         caloric_intake,
         visceral_fat_rating,
     ) in readings:
-        print(
-            f"api.add_body_composition({timestamp.isoformat()}, {weight}, {percent_fat}, {percent_water}, {bone_mass}, {muscle_mass}, {physique_rating}, {metabolic_age}, {caloric_intake}, {visceral_fat_rating}, {bmi})"
-        )
 
 #        Comment out if you want to delete all content from the newly added dates (replacing manual weigh-ins with this extensive automated ones.
 
@@ -203,7 +200,7 @@ def upload_file(input_filename):
 #            timestamp.strftime("%Y-%m-%d"),
 #            delete_all=True,
 #		)
-        print("✅ Weigh-ins deleted successfully!") 
+#        print("Weigh-ins deleted successfully!") 
         api.add_body_composition(
             timestamp.isoformat(),
             weight=weight,
@@ -215,6 +212,9 @@ def upload_file(input_filename):
             metabolic_age=metabolic_age,
             visceral_fat_rating=visceral_fat_rating,
             bmi=bmi,
+        )
+        print(
+            f"api.add_body_composition({timestamp.isoformat()}, {weight}, {percent_fat}, {percent_water}, {bone_mass}, {muscle_mass}, {physique_rating}, {metabolic_age}, {caloric_intake}, {visceral_fat_rating}, {bmi})"
         )
 
     print(f"Uploading to {user}'s Garmin account complete. Processed {len(readings)} readings.")
